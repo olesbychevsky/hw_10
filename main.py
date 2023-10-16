@@ -35,7 +35,7 @@ class Record:
 
     def add_phone(self, phone):
         if self.is_valid_phone(phone):
-            self.phones.append(phone)
+            self.phones.append(Phone(phone))
         else:
             raise ValueError('Phone number must be a 10-digit number.')
 
@@ -49,22 +49,20 @@ class Record:
             phone_to_edit.value = new_phone
             return f'Phone {old_phone} has been updated to {new_phone} in the record: {self.name.value}'
         else:
-            raise ValueError(f'Phone {old_phone} not found in the record.')
-
-
-
+            raise ValueError()
 
     def find_phone(self, phone_to_find):
         for phone in self.phones:
-            if isinstance(phone, Phone) and phone.value == phone_to_find:
+            # if isinstance(phone, Phone) and phone.value == phone_to_find:
+            if phone.value == phone_to_find:
                 return phone
         return None
 
     def remove_phone(self, phone):
-        if phone in self.phones:
-            self.phones.remove(phone)
-        else:
-            raise ValueError('Phone not found in the record.')
+        for p in self.phones:
+            if p.value == phone:
+                return self.phones.remove(p)
+        # raise ValueError()
 
 def input_error(func):
     def inner(user_string):
