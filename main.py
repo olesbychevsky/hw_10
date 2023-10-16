@@ -1,5 +1,70 @@
-from classes import AddressBook, Record
+from collections import UserDict
 
+class Field:
+    def __init__(self, name):
+        self.value = name
+
+class AddressBook(UserDict):
+    def add_record(self, record):
+        self.data[record.name.value] = record
+
+    def find(self, name):
+        return self.data.get(name)
+
+    def delete(self, name):
+        if name in self.data:
+            del self.data[name]
+
+class Name(Field):
+    pass
+
+class Phone(Field):
+    def __init__(self, number):
+        if not self.is_valid_phone(number):
+            raise ValueError('Phone number must be a 10-digit number.')
+        super().__init__(number)
+
+    @staticmethod
+    def is_valid_phone(number):
+        return len(number) == 10 and number.isdigit()
+
+class Record:
+    def __init__(self, name):
+        self.name = Name(name)
+        self.phones = []
+
+    def add_phone(self, phone):
+        if self.is_valid_phone(phone):
+            self.phones.append(phone)
+        else:
+            raise ValueError('Phone number must be a 10-digit number.')
+
+    @staticmethod
+    def is_valid_phone(number):
+        return len(number) == 10 and number.isdigit()
+
+    def edit_phone(self, old_phone, new_phone):
+        phone_to_edit = self.find_phone(old_phone)
+        if phone_to_edit:
+            phone_to_edit.value = new_phone
+            return f'Phone {old_phone} has been updated to {new_phone} in the record: {self.name.value}'
+        else:
+            raise ValueError(f'Phone {old_phone} not found in the record.')
+
+
+
+
+    def find_phone(self, phone_to_find):
+        for phone in self.phones:
+            if isinstance(phone, Phone) and phone.value == phone_to_find:
+                return phone
+        return None
+
+    def remove_phone(self, phone):
+        if phone in self.phones:
+            self.phones.remove(phone)
+        else:
+            raise ValueError('Phone not found in the record.')
 
 def input_error(func):
     def inner(user_string):
@@ -8,12 +73,11 @@ def input_error(func):
             return result
         except KeyError:
             return 'Enter user name:'
-        except ValueError:
-            return 'Enter correct type:'
+        except ValueError as e:
+            return str(e)
         except IndexError:
             return 'Please enter command, name, and phone:'
     return inner
-
 
 COMMANDS_DESCRIPTION = {
     'add': 'Add a new contact',
@@ -28,56 +92,54 @@ COMMANDS_DESCRIPTION = {
     'help': 'Show available commands',
 }
 
+def create_data(data):
+    if len(data) != 2:
+        raise IndexError('Please enter command, name, and phone.')
+    name = Name(data[0])
+    phone = Phone(data[1])
+    return name, phone
 
 @input_error
 def add_contact(data):
     name, phone = create_data(data)
-    record_add = Record(name.lower())
+    record_add = Record(name)
     record_add.add_phone(phone)
     addressbook.add_record(record_add)
-    return f'A new contact added successfully. {name} phone: {phone}'
-
+    return f'A new contact added successfully. {name.value} phone: {phone.value}'
 
 @input_error
 def add_new_phone(data):
     name, phone = create_data(data)
-    record_add_phone = addressbook.data[name]
-    record_add_phone.add_phone(phone)
-    return f'A new phone: {phone}, has been added to contact name: {name}.'
-
+    record_add_phone = addressbook.data.get(name.value)
+    if record_add_phone:
+        record_add_phone.add_phone(phone)
+        return f'A new phone: {phone.value}, has been added to contact name: {name.value}.'
+    else:
+        return f'Contact with name "{name.value}" not found in the address book.'
 
 @input_error
 def change_contact(data):
     name, phone = create_data(data)
-    new_phone = data[2]
+    new_phone = Phone(data[2])
 
-    record_change = addressbook.data[name]
-    if record_change.change_contact(old_phone=phone, new_phone=new_phone) is True:
-        return f'A contact name: {name} number: {phone}, has been changed to {new_phone}.'
+    record_change = addressbook.data.get(name.value)
+    if record_change:
+        try:
+            return record_change.edit_phone(phone.value, new_phone.value)
+        except ValueError as e:
+            return str(e)
     else:
-        return 'The phone number not exist'
-
+        return f'Contact with name "{name.value}" not found in the address book.'
 
 @input_error
 def get_number(name_contact):
     name = name_contact[0]
-    if name in addressbook.data:
-        record = addressbook.data[name]
+    record = addressbook.data.get(name.value)
+    if record:
         phones = ', '.join([phone.value for phone in record.phones])
-        return f"Name: {record.name.value}, Phones: {phones}"
+        return f"Name: {name.value}, Phones: {phones}"
     else:
-        return f"Contact with name '{name}' not found in the address book."
-
-
-@input_error
-def quit_func(quit_command):
-    return f'Thank you for using our BOT!!'
-
-
-@input_error
-def hello_func(hello_command):
-    return f"Hello! How can I help you?"
-
+        return f'Contact with name "{name.value}" not found in the address book.'
 
 @input_error
 def show_all_func(show_all_command):
@@ -87,6 +149,13 @@ def show_all_func(show_all_command):
         result += f"Name: {name}, Phone: {phones}\n"
     return result
 
+@input_error
+def quit_func(quit_command):
+    return 'Thank you for using our BOT!'
+
+@input_error
+def hello_func(hello_command):
+    return "Hello! How can I help you?"
 
 @input_error
 def help_func(help_command):
@@ -94,30 +163,23 @@ def help_func(help_command):
         [f"{cmd}: {description}" for cmd, description in COMMANDS_DESCRIPTION.items()])
     return f"Available commands:\n{commands_list}"
 
+@input_error
+def find_contact(data):
+    name = data[0]
+    return addressbook.find(name)
 
 @input_error
-def delete_func(data):
-    name, phone = create_data(data)
-    record_delete = addressbook.data[name]
-
-    if record_delete.delete_phone(phone) is True:
-        return f'Contact name: {name} phone: {phone}, has been deleted.'
-
-    else:
-        return 'The phone number does not exist'
-
-
-def create_data(data):
+def delete_contact(data):
     name = data[0]
-    phone = data[1]
-    if name.isnumeric():
-        raise ValueError('Wrong name.')
-    if not phone.isnumeric():
-        raise ValueError('Wrong phone.')
-    return name, phone
-
+    if name.value in addressbook.data:
+        del addressbook.data[name.value]
+        return f'Contact with name "{name.value}" has been deleted.'
+    else:
+        return f'Contact with name "{name.value}" not found in the address book.'
 
 def main():
+    global addressbook
+    addressbook = AddressBook()
 
     COMMANDS = {
         'add': add_contact,
@@ -130,6 +192,8 @@ def main():
         'close': quit_func,
         'exit': quit_func,
         'help': help_func,
+        'delete': delete_contact,
+        'find': find_contact,
     }
 
     print('Welcome to BOT >>>')
@@ -146,16 +210,8 @@ def main():
             result = COMMANDS[command](arguments)
             if result:
                 print(result)
-
-        elif user_input in COMMANDS:
-            result = COMMANDS[user_input](user_input)
-            if result:
-                print(result)
-
         else:
             print(f"Incorrect input '{user_input}', please, try again:")
 
-
 if __name__ == "__main__":
-    addressbook = AddressBook()
     main()
