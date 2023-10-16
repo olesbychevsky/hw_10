@@ -1,8 +1,10 @@
 from collections import UserDict
 
+
 class Field:
     def __init__(self, name):
         self.value = name
+
 
 class AddressBook(UserDict):
     def add_record(self, record):
@@ -15,8 +17,10 @@ class AddressBook(UserDict):
         if name in self.data:
             del self.data[name]
 
+
 class Name(Field):
     pass
+
 
 class Phone(Field):
     def __init__(self, number):
@@ -28,6 +32,7 @@ class Phone(Field):
     def is_valid_phone(number):
         return len(number) == 10 and number.isdigit()
 
+
 class Record:
     def __init__(self, name):
         self.name = Name(name)
@@ -35,7 +40,7 @@ class Record:
 
     def add_phone(self, phone):
         if self.is_valid_phone(phone):
-            self.phones.append(phone)
+            self.phones.append(Phone(phone))
         else:
             raise ValueError('Phone number must be a 10-digit number.')
 
@@ -49,22 +54,19 @@ class Record:
             phone_to_edit.value = new_phone
             return f'Phone {old_phone} has been updated to {new_phone} in the record: {self.name.value}'
         else:
-            raise ValueError(f'Phone {old_phone} not found in the record.')
-
-
-
+            raise ValueError()
 
     def find_phone(self, phone_to_find):
         for phone in self.phones:
-            if isinstance(phone, Phone) and phone.value == phone_to_find:
+            if phone.value == phone_to_find:
                 return phone
         return None
 
     def remove_phone(self, phone):
-        if phone in self.phones:
-            self.phones.remove(phone)
-        else:
-            raise ValueError('Phone not found in the record.')
+        for p in self.phones:
+            if p.value == phone:
+                return self.phones.remove(p)
+
 
 def input_error(func):
     def inner(user_string):
@@ -79,6 +81,7 @@ def input_error(func):
             return 'Please enter command, name, and phone:'
     return inner
 
+
 COMMANDS_DESCRIPTION = {
     'add': 'Add a new contact',
     'add_phone': 'Add a new phone to an existing contact',
@@ -92,12 +95,14 @@ COMMANDS_DESCRIPTION = {
     'help': 'Show available commands',
 }
 
+
 def create_data(data):
     if len(data) != 2:
         raise IndexError('Please enter command, name, and phone.')
     name = Name(data[0])
     phone = Phone(data[1])
     return name, phone
+
 
 @input_error
 def add_contact(data):
@@ -106,6 +111,7 @@ def add_contact(data):
     record_add.add_phone(phone)
     addressbook.add_record(record_add)
     return f'A new contact added successfully. {name.value} phone: {phone.value}'
+
 
 @input_error
 def add_new_phone(data):
@@ -116,6 +122,7 @@ def add_new_phone(data):
         return f'A new phone: {phone.value}, has been added to contact name: {name.value}.'
     else:
         return f'Contact with name "{name.value}" not found in the address book.'
+
 
 @input_error
 def change_contact(data):
@@ -131,6 +138,7 @@ def change_contact(data):
     else:
         return f'Contact with name "{name.value}" not found in the address book.'
 
+
 @input_error
 def get_number(name_contact):
     name = name_contact[0]
@@ -141,6 +149,7 @@ def get_number(name_contact):
     else:
         return f'Contact with name "{name.value}" not found in the address book.'
 
+
 @input_error
 def show_all_func(show_all_command):
     result = 'All contacts:\n'
@@ -149,13 +158,16 @@ def show_all_func(show_all_command):
         result += f"Name: {name}, Phone: {phones}\n"
     return result
 
+
 @input_error
 def quit_func(quit_command):
     return 'Thank you for using our BOT!'
 
+
 @input_error
 def hello_func(hello_command):
     return "Hello! How can I help you?"
+
 
 @input_error
 def help_func(help_command):
@@ -163,10 +175,12 @@ def help_func(help_command):
         [f"{cmd}: {description}" for cmd, description in COMMANDS_DESCRIPTION.items()])
     return f"Available commands:\n{commands_list}"
 
+
 @input_error
 def find_contact(data):
     name = data[0]
     return addressbook.find(name)
+
 
 @input_error
 def delete_contact(data):
@@ -176,6 +190,7 @@ def delete_contact(data):
         return f'Contact with name "{name.value}" has been deleted.'
     else:
         return f'Contact with name "{name.value}" not found in the address book.'
+
 
 def main():
     global addressbook
@@ -212,6 +227,7 @@ def main():
                 print(result)
         else:
             print(f"Incorrect input '{user_input}', please, try again:")
+
 
 if __name__ == "__main__":
     main()
